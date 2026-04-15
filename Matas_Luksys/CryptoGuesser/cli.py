@@ -1,4 +1,5 @@
 import click
+from datetime import datetime, UTC
 from pipeline.fetch import bootstrap_all, append_all, SYMBOLS, MODEL_CONFIGS
 from pipeline.train import run_training
 from api.predict import get_prediction
@@ -88,14 +89,14 @@ def predict(symbol, model, threshold):
     if invalid:
         raise click.BadParameter(f"Unknown models: {invalid}. Valid: {list(MODEL_CONFIGS.keys())}")
 
-    click.echo(f"\nRunning prediction for {symbol} using models: {targets}\n")
+    click.echo(f"\nRunning prediction for {symbol} using models: {targets}")
+    click.echo(f"  Started at : {datetime.now(UTC).strftime('%Y-%m-%d %H:%M:%S UTC')}\n")
 
     results = []
     for m in targets:
         try:
             result = get_prediction(symbol=symbol, model=m, threshold=threshold)
 
-            # Guard against nan confidence — treat as missing model
             conf = result.get("confidence")
             if conf is None or (isinstance(conf, float) and math.isnan(conf)):
                 click.echo(f"  [{m.upper()}] SKIPPED — model returned invalid confidence (NaN). "
@@ -109,7 +110,7 @@ def predict(symbol, model, threshold):
                        f"reliable={reliable_str}  "
                        f"window_end={result['window_end']}")
 
-        except FileNotFoundError as e:
+        except FileNotFoundError:
             click.echo(f"  [{m.upper()}] SKIPPED — no trained model found. "
                        f"Run: python cli.py train --model {m}")
         except Exception as e:
@@ -125,20 +126,32 @@ def predict(symbol, model, threshold):
             return
 
         confident = [r for r in results if r["reliable"]]
-        click.echo(f"  Models ran    : {len(results)}/{len(targets)}")
+        click.echo(f"  Models ran     : {len(results)}/{len(targets)}")
         click.echo(f"  Above threshold: {len(confident)}/{len(results)}")
 
         if not confident:
-            click.echo("  Signal        : ABSTAIN — no model confident enough")
+            click.echo("  Signal         : ABSTAIN — no model confident enough")
             click.echo(f"  (lower --threshold below {threshold} to force a signal)")
         else:
-            avg_conf = sum(r["confidence"] for r in confident) / len(confident)
-            votes_up = sum(1 for r in confident if r["signal"] == 1)
+            votes_up   = sum(1 for r in confident if r["signal"] == 1)
             votes_down = len(confident) - votes_up
-            direction = "UP" if votes_up >= votes_down else "DOWN"
-            click.echo(f"  Signal        : {direction}")
-            click.echo(f"  Avg Confidence: {avg_conf:.1%}")
-            click.echo(f"  Votes         : {votes_up} UP / {votes_down} DOWN")
+            direction  = "UP" if votes_up >= votes_down else "DOWN"
+
+            # Average confidence toward the winning direction
+            if direction == "UP":
+                avg_conf = sum(
+                    r["confidence"] if r["signal"] == 1 else 1 - r["confidence"]
+                    for r in confident
+                ) / len(confident)
+            else:
+                avg_conf = sum(
+                    1 - r["confidence"] if r["signal"] == 1 else r["confidence"]
+                    for r in confident
+                ) / len(confident)
+
+            click.echo(f"  Signal         : {direction}")
+            click.echo(f"  Avg Confidence : {avg_conf:.1%}")
+            click.echo(f"  Votes          : {votes_up} UP / {votes_down} DOWN")
 
     if results:
         click.echo(f"\n  Model date : {results[0]['model_date']}")
@@ -148,7 +161,6 @@ def predict(symbol, model, threshold):
 @cli.command()
 def status():
     """Show data availability and latest model dates for all models."""
-    import os
     from pathlib import Path
     import pandas as pd
 
