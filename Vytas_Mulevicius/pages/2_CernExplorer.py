@@ -5,25 +5,16 @@ import os
 import pandas as pd
 import math
 from scripts.download_data import download_single_file
+from scripts.ui_utils import apply_branding
 
-st.set_page_config(page_title="CERN Explorer - Data Search", page_icon="🔍", layout="wide")
+st.set_page_config(page_title="CERN Explorer | Portal", page_icon="⚛️", layout="wide")
 
-# Custom CSS for premium feel
+# Apply unified enterprise branding
+apply_branding()
+
+# Page-specific styling extensions
 st.markdown("""
     <style>
-    .main {
-        background-color: #0e1117;
-    }
-    .stMarkdown h1 {
-        font-family: 'Inter', sans-serif;
-        font-weight: 800;
-        color: #00d4ff;
-    }
-    .stMarkdown h2 {
-        color: #00ff88;
-        border-bottom: 2px solid #00ff88;
-        padding-bottom: 5px;
-    }
     .metric-card {
         background: rgba(255, 255, 255, 0.03);
         padding: 15px;
@@ -202,7 +193,7 @@ if st.session_state.search_query:
                                     st.error(st.session_state.preview_error)
                                     del st.session_state.preview_error
                                 elif st.session_state.get('preview_type') == 'df':
-                                    st.dataframe(st.session_state.preview_content, use_container_width=True)
+                                    st.dataframe(st.session_state.preview_content, width='stretch')
                                 else:
                                     st.code(st.session_state.preview_content, language='text')
                     

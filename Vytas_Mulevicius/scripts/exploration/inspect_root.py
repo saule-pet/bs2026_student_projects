@@ -1,38 +1,51 @@
 import uproot
 import awkward as ak
 
-file_path = "data/00041834_00013937_1.dimuon.dst"
+def get_root_structure(file_path):
+    """
+    Returns a dictionary of all trees and their top-level keys in a ROOT file.
+    Useful for quick navigation in the Streamlit UI.
+    """
+    try:
+        with uproot.open(file_path) as file:
+            # Recursively find all items that have 'arrays' (i.e. are Trees)
+            all_trees = [k for k, v in file.items(recursive=True) if hasattr(v, "arrays")]
+            structure = {}
+            for t in all_trees:
+                structure[t] = file[t].keys()
+            return structure
+    except Exception as e:
+        return {"error": str(e)}
 
-try:
-    with uproot.open(file_path) as file:
-        event_tree = file['Event;1']
-        
-        # Look into the Dimuon particles specific branch
-        dimuon_branch_name = '_Event_Dimuon_pPhys_Particles.'
-        
-        if dimuon_branch_name in event_tree:
-            print(f"\n--- Exploring {dimuon_branch_name} ---")
-            branch = event_tree[dimuon_branch_name]
-            print(f"Branch typename: {branch.typename}")
-            print(f"Branch interpretation: {branch.interpretation}")
-            
-            # Let's see the nested structure
-            print("\nSub-branches:")
-            for sub_branch in branch.keys():
-                 print(f"  - {sub_branch}")
-                 
-            # Try to read the first few events of the payload
-            print("\nTrying to read the payload...")
-            try:
-                # payload is usually where the data is in Gaudi RootObjectRefs
-                payload = event_tree[dimuon_branch_name + '/_Event_Dimuon_pPhys_Particles.payload_'].array(entry_stop=5)
-                print(payload.type)
-                print(payload)
-            except Exception as e:
-                print(f"Could not read payload directly: {e}")
-                
-        else:
-             print(f"Branch {dimuon_branch_name} not found.")
-            
-except Exception as e:
-    print(f"Error: {e}")
+def get_branch_details(file_path, tree_name):
+    """
+    Returns detailed typing and meta info for branches in a specific tree.
+    """
+    try:
+        with uproot.open(file_path) as file:
+            tree = file[tree_name]
+            details = {}
+            for k in tree.keys():
+                branch = tree[k]
+                details[k] = {
+                    "typename": branch.typename,
+                    "interpretation": str(branch.interpretation)
+                }
+            return details
+    except Exception as e:
+        return {"error": str(e)}
+
+if __name__ == "__main__":
+    # legacy behavior
+    path = "data/00041834_00013937_1.dimuon.dst"
+    print(f"Inspecting {path}...")
+    struct = get_root_structure(path)
+    if "error" in struct:
+        print(struct["error"])
+    else:
+        for tree, keys in struct.items():
+            print(f"\nTree: {tree}")
+            for k in keys[:10]: # First 10
+                print(f"  - {k}")
+            if len(keys) > 10:
+                print(f"  ... and {len(keys)-10} more")

@@ -1,31 +1,42 @@
 import streamlit as st
+from scripts.ui_utils import apply_branding
 
 st.set_page_config(
-    page_title="CERN Open Data Explorer - Home",
+    page_title="CERN Explorer | Home",
     page_icon="⚛️",
     layout="wide"
 )
 
-st.write("# Welcome to the CERN Open Data Explorer! ⚛️")
+# Apply unified enterprise branding
+apply_branding()
 
-st.markdown("""
-This application allows you to explore authentic High Energy Physics data released by the CMS experiment at CERN.
+st.write("# ⚛️ CERN Open Data Explorer")
 
-Using the tools built into this dashboard, you can "rediscover" fundamental particles like the $J/\\psi$, $\\Upsilon$, and $Z$ bosons by analyzing the invariant mass of dimuon pairs ($\\mu^+\\mu^-$) generated in proton-proton collisions during Run 2011A.
+st.markdown(r"""
+Welcome to the professional-grade portal for High Energy Physics exploration. 
+This application provides researchers and students with direct access to authentic collision data 
+released by the **CMS Experiment** at CERN.
+
+---
+
+### 🚀 Exploration Modules
+
+| Module | Description |
+| :--- | :--- |
+| **⚛️ Analysis** | Perform invariant mass reconstruction and 3D momentum visualization. |
+| **🔍 CERN Explorer** | Live search and streaming from the opendata.cern.ch API. |
+| **📝 Macro Generator** | Export DaVinci/Gaudi processing macros for CERN GRID jobs. |
+
+---
 
 ### 👈 Getting Started
-To begin your interactive physics analysis, **select the `1 Analysis` page from the sidebar menu to the left.**
+To begin your interactive physics analysis, **select a module from the sidebar menu to the left.**
 
-### What you will find in the Analysis module:
-- **Interactive Mass Histograms:** Apply custom kinematic cuts and scan through millions of events.
-- **Advanced 3D Event Display:** Visualize the individual momentum vectors ($p_x, p_y, p_z$) of the emitted muons, just like physicists do at CERN.
-- **3D Event Animation:** Native browser animations to scan through massive collision datasets seamlessly.
-
-### Datasets Included:
-1. **$J/\\psi \\rightarrow \\mu\\mu$**: A lower mass resonance proving the existence of the charm quark.
-2. **$\\Upsilon \\rightarrow \\mu\\mu$**: The bottomonium resonance that confirms the bottom quark.
-3. **$Z \\rightarrow \\mu\\mu$**: The massive weak force carrier boson. 
+Using these tools, you can "rediscover" fundamental particles like the $J/\psi$, $\Upsilon$, and $Z$ bosons by analyzing dimuon pairs ($\mu^+\mu^-$) from Run 2011A.
 """)
 
-st.info("💡 **Navigation:** Use the sidebar on the left to switch between this Home page and the actual interactive Analysis dashboard.")
-st.success("Head over to the Analysis page to start your journey!")
+
+st.info("💡 **Navigation:** Use the sidebar on the left to switch between modules.")
+
+# Sidebar Footer
+# Credits are now handled by apply_branding()

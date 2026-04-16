@@ -4,8 +4,14 @@ import numpy as np
 import plotly.graph_objects as go
 import os
 from scripts.download_data import get_datasets, download_dataset
+from scripts.analysis.plot_mass import generate_publication_plot
+from scripts.exploration.inspect_root import get_root_structure, get_branch_details
+from scripts.ui_utils import apply_branding
 
-st.set_page_config(page_title="CERN Open Data Explorer", page_icon="⚛️", layout="wide")
+st.set_page_config(page_title="CERN Explorer | Analysis", page_icon="⚛️", layout="wide")
+
+# Apply unified enterprise branding
+apply_branding()
 
 # Select Dataset
 st.sidebar.header("Dataset Selection")
@@ -140,6 +146,27 @@ st.sidebar.header("Kinematic Cuts")
 pt_min = st.sidebar.slider("Minimum Muon pT [GeV/c]", 0.0, 50.0, 0.0, 0.5)
 eta_max = st.sidebar.slider("Maximum Muon |η|", 0.0, 3.0, 2.4, 0.1)
 require_opposite_charge = st.sidebar.checkbox("Require Opposite Charge (Q1 + Q2 = 0)", value=True)
+
+# --- NEW: Advanced File Diagnostic Tool ---
+st.sidebar.markdown("---")
+st.sidebar.header("🛠️ File Tools")
+if st.sidebar.checkbox("Show Deep File Inspector"):
+    st.subheader("🕵️ Deep ROOT/CSV Inspector")
+    path_to_inspect = f"data/{selected_file}" if data_source == "Local Storage" else selected_file
+    
+    if is_root:
+        struct = get_root_structure(path_to_inspect)
+        if "error" in struct:
+             st.error(struct["error"])
+        else:
+            tree_to_inspect = st.selectbox("Select Tree to explore branches", list(struct.keys()))
+            if tree_to_inspect:
+                details = get_branch_details(path_to_inspect, tree_to_inspect)
+                st.write(f"**Found {len(details)} branches in `{tree_to_inspect}`:**")
+                st.dataframe(details)
+    else:
+        st.info("Directly inspecting CSV schema via Polars:")
+        st.write(df.schema)
 
 # Calculate Invariant Mass and apply cuts dynamically based on available columns
 cols = df.columns
@@ -374,7 +401,27 @@ if view_mode == "Mass Histogram":
         legend=dict(yanchor="top", y=0.99, xanchor="right", x=0.99)
     )
     
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width='stretch')
+    
+    # --- NEW: Publication Quality Plot Export ---
+    st.markdown("---")
+    st.subheader("🎓 Publication Export")
+    st.caption("Generate a high-DPI static plot using Matplotlib (legacy engine integration).")
+    if st.button("Generate Publication-Ready Plot"):
+        with st.spinner("Rendering high-res PNG..."):
+            plot_buf = generate_publication_plot(
+                filtered_df, 
+                particle_name=particle_name, 
+                expected_mass=expected_mass,
+                mass_range=mass_range
+            )
+            st.image(plot_buf, caption=f"High-Res {particle_name} Histogram (300 DPI)")
+            st.download_button(
+                label="📥 Download PNG for Paper",
+                data=plot_buf,
+                file_name=f"{particle_name}_publication_plot.png",
+                mime="image/png"
+            )
 
 elif view_mode == "3D Event Display":
     st.subheader("3D Momentum Visualization")
@@ -452,7 +499,7 @@ elif view_mode == "3D Event Display":
             template='plotly_white'
         )
         
-        st.plotly_chart(fig3d, use_container_width=True)
+        st.plotly_chart(fig3d, width='stretch')
         
         # --- Advanced Analytics ---
         st.markdown("### Physics Analytics")
@@ -573,7 +620,7 @@ elif view_mode == "3D Event Animation":
             legend=dict(yanchor="top", y=0.99, xanchor="right", x=0.99)
         )
         
-        st.plotly_chart(fig_anim, use_container_width=True)
+        st.plotly_chart(fig_anim, width='stretch')
     else:
         st.warning("No events found to animate.")
 
