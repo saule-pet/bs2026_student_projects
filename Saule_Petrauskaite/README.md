@@ -1,2 +1,2 @@
 # Plate Packing Optimization Tool for IBS Machine Tooling
-(Video nuoroda bus pridėta vėliau)
+https://drive.google.com/file/d/16MkXHcSsd0xL5125jxYJywTzSDKaIW7k/view?usp=sharing 
